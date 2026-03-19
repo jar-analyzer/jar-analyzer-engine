@@ -20,7 +20,7 @@
 
 ---
 
-> [English Version](README.md)
+> [English Version](README_EN.md)
 
 ## 📖 简介
 
