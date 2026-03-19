@@ -78,7 +78,7 @@ java -jar jar-analyzer-engine.jar --jar /path/to/libs/
 
 ```
 
-分析完成后将在当前目录生成 SQLite 数据库文件 `jar-analyzer.db`，可使用任何 SQLite 客户端工具查询。
+分析完成后将在当前目录生成 SQLite 数据库文件 `jar-analyzer.db`，可使用任何 SQLite 客户端工具查询。分析过程中的临时文件存放在 `jar-analyzer-temp` 目录中，分析完成后可手动删除。
 
 ## 📋 命令行参数
 
@@ -92,7 +92,6 @@ java -jar jar-analyzer-engine.jar --jar /path/to/libs/
 
 | 参数 | 缩写 | 默认值 | 说明 |
 |------|------|--------|------|
-| `--temp <path>` | `-t` | `jar-analyzer-temp` | 临时解压目录路径 |
 | `--rt <path>` | — | 无 | rt.jar 路径，附加 JDK 标准类进行分析 |
 | `--quick` | `-q` | `false` | 启用快速模式 |
 | `--fix-class` | — | `false` | 启用类名修正模式 |
@@ -123,14 +122,6 @@ java -jar jar-analyzer-engine.jar --jar webapp.war
 
 # 扫描整个 lib 目录
 java -jar jar-analyzer-engine.jar --jar /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-```
-
-### `--temp` / `-t`
-
-指定临时解压目录。引擎在分析过程中需要将 JAR/WAR 中的 class 文件解压到磁盘，分析完成后可手动清理。
-
-```bash
-java -jar jar-analyzer-engine.jar --jar app.jar --temp /tmp/jar-temp
 ```
 
 ### `--rt`
@@ -527,7 +518,6 @@ import me.n1ar4.jar.analyzer.engine.ProgressCallback;
 // 构建配置
 EngineConfig config = new EngineConfig();
 config.setJarPath(Paths.get("/path/to/app.jar"));
-config.setTempDir("temp");
 config.setQuickMode(false);
 config.setFixClass(true);
 config.setJarsInJar(true);

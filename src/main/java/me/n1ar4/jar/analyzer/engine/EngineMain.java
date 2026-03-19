@@ -65,7 +65,6 @@ public class EngineMain {
         // Build EngineConfig from CLI parameters
         EngineConfig config = new EngineConfig();
         config.setJarPath(jarPath);
-        config.setTempDir(cmd.tempDir);
         config.setQuickMode(cmd.quickMode);
         config.setFixClass(cmd.fixClass);
         config.setJarsInJar(cmd.jarsInJar);
@@ -109,7 +108,7 @@ public class EngineMain {
         System.out.println("Configuration:");
         System.out.println("  JAR Path:      " + config.getJarPath());
         System.out.println("  DB Path:       jar-analyzer.db");
-        System.out.println("  Temp Dir:      " + config.getTempDir());
+        System.out.println("  Temp Dir:      " + EngineConst.tempDir);
         System.out.println("  Quick Mode:    " + config.isQuickMode());
         System.out.println("  Fix Class:     " + config.isFixClass());
         System.out.println("  Inner JARs:    " + config.isJarsInJar());

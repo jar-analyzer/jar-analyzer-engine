@@ -76,7 +76,7 @@ java -jar jar-analyzer-engine.jar --jar /path/to/libs/
 
 ```
 
-After analysis, a SQLite database file `jar-analyzer.db` will be generated in the current directory and can be queried with any SQLite client tool.
+After analysis, a SQLite database file `jar-analyzer.db` will be generated in the current directory and can be queried with any SQLite client tool. Temporary files during analysis are stored in the `jar-analyzer-temp` directory, which can be manually deleted after analysis completes.
 
 ## 📋 Command-Line Arguments
 
@@ -90,7 +90,6 @@ After analysis, a SQLite database file `jar-analyzer.db` will be generated in th
 
 | Argument | Short | Default | Description |
 |----------|-------|---------|-------------|
-| `--temp <path>` | `-t` | `jar-analyzer-temp` | Temporary extraction directory path |
 | `--rt <path>` | — | None | Path to rt.jar for including JDK standard classes in the analysis |
 | `--quick` | `-q` | `false` | Enable quick mode |
 | `--fix-class` | — | `false` | Enable class name correction mode |
@@ -121,14 +120,6 @@ java -jar jar-analyzer-engine.jar --jar webapp.war
 
 # Scan entire lib directory
 java -jar jar-analyzer-engine.jar --jar /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-```
-
-### `--temp` / `-t`
-
-Specifies the temporary extraction directory. The engine needs to extract class files from JARs/WARs to disk during analysis. The directory can be manually cleaned up after analysis completes.
-
-```bash
-java -jar jar-analyzer-engine.jar --jar app.jar --temp /tmp/jar-temp
 ```
 
 ### `--rt`
@@ -528,7 +519,6 @@ import me.n1ar4.jar.analyzer.engine.ProgressCallback;
 // Build configuration
 EngineConfig config = new EngineConfig();
 config.setJarPath(Paths.get("/path/to/app.jar"));
-config.setTempDir("temp");
 config.setQuickMode(false);
 config.setFixClass(true);
 config.setJarsInJar(true);

@@ -29,11 +29,6 @@ public class EngineConfig {
     private Path rtJarPath;
 
     /**
-     * 临时解压目录（默认 jar-analyzer-temp）
-     */
-    private String tempDir = EngineConst.tempDir;
-
-    /**
      * 类/包黑名单文本
      * 支持 ListParser 语法：
      * - # // /* 注释
@@ -95,13 +90,6 @@ public class EngineConfig {
         this.rtJarPath = rtJarPath;
     }
 
-    public String getTempDir() {
-        return tempDir;
-    }
-
-    public void setTempDir(String tempDir) {
-        this.tempDir = tempDir;
-    }
 
     public String getClassBlackList() {
         return classBlackList;

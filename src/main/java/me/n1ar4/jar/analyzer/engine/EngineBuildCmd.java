@@ -24,9 +24,6 @@ public class EngineBuildCmd {
     @Parameter(names = {"--rt"}, description = "rt.jar path (optional, for JDK class analysis)")
     public String rtJarPath;
 
-    @Parameter(names = {"--temp", "-t"}, description = "Temp directory for extraction (default: jar-analyzer-temp)")
-    public String tempDir = "jar-analyzer-temp";
-
     @Parameter(names = {"--black-list", "-b"}, description = "Class/package black list text or file path")
     public String classBlackList;
 

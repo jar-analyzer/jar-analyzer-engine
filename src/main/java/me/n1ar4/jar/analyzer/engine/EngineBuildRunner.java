@@ -109,7 +109,7 @@ public class EngineBuildRunner {
                 }
                 cf.setClassName(className);
             } else {
-                Path parPath = Paths.get(config.getTempDir());
+                Path parPath = Paths.get(EngineConst.tempDir);
                 FixClassVisitor cv = new FixClassVisitor();
                 try {
                     ClassReader cr = new ClassReader(cf.getFile());
