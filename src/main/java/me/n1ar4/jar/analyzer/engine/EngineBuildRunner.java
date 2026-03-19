@@ -249,7 +249,7 @@ public class EngineBuildRunner {
         logger.info("build database finish");
         callback.onInfo("build database finish");
 
-        long fileSizeBytes = new File(config.getDbPath()).length();
+        long fileSizeBytes = new File(EngineConst.dbFile).length();
         String fileSizeMB = String.format("%.2f MB", (double) fileSizeBytes / (1024 * 1024));
         callback.onStats("dbSize", fileSizeMB);
 

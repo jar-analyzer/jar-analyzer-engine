@@ -19,17 +19,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/**
- * Engine Main Entry - CLI mode
- * <p>
- * Usage:
- * java -jar jar-analyzer-engine.jar --jar /path/to/jars --db output.db
- * java -jar jar-analyzer-engine.jar --jar /path/to/app.jar --quick
- * java -jar jar-analyzer-engine.jar --jar /path/to/jars --black-list-file blacklist.txt --white-list-file whitelist.txt
- */
 public class EngineMain {
     private static final Logger logger = LogManager.getLogger();
 
+    @SuppressWarnings("all")
     public static void main(String[] args) {
         System.out.println("=== Jar Analyzer Engine " + EngineConst.version + " ===");
         System.out.println("Build SQLite database from JAR/WAR files");
@@ -72,7 +65,6 @@ public class EngineMain {
         // Build EngineConfig from CLI parameters
         EngineConfig config = new EngineConfig();
         config.setJarPath(jarPath);
-        config.setDbPath(cmd.dbPath);
         config.setTempDir(cmd.tempDir);
         config.setQuickMode(cmd.quickMode);
         config.setFixClass(cmd.fixClass);
@@ -116,7 +108,7 @@ public class EngineMain {
         // Print config summary
         System.out.println("Configuration:");
         System.out.println("  JAR Path:      " + config.getJarPath());
-        System.out.println("  DB Path:       " + config.getDbPath());
+        System.out.println("  DB Path:       jar-analyzer.db");
         System.out.println("  Temp Dir:      " + config.getTempDir());
         System.out.println("  Quick Mode:    " + config.isQuickMode());
         System.out.println("  Fix Class:     " + config.isFixClass());
@@ -141,6 +133,6 @@ public class EngineMain {
         System.out.println();
         System.out.println("=== Build Complete ===");
         System.out.printf("Time elapsed: %.2f seconds%n", elapsed / 1000.0);
-        System.out.println("Database: " + config.getDbPath());
+        System.out.println("Database: jar-analyzer.db");
     }
 }

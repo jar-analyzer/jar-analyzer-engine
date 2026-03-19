@@ -24,9 +24,6 @@ public class EngineBuildCmd {
     @Parameter(names = {"--rt"}, description = "rt.jar path (optional, for JDK class analysis)")
     public String rtJarPath;
 
-    @Parameter(names = {"--db", "-d"}, description = "Output database file path (default: jar-analyzer.db)")
-    public String dbPath = "jar-analyzer.db";
-
     @Parameter(names = {"--temp", "-t"}, description = "Temp directory for extraction (default: jar-analyzer-temp)")
     public String tempDir = "jar-analyzer-temp";
 

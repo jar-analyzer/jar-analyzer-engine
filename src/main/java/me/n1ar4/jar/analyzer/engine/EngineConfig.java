@@ -29,11 +29,6 @@ public class EngineConfig {
     private Path rtJarPath;
 
     /**
-     * 输出数据库文件路径（默认 jar-analyzer.db）
-     */
-    private String dbPath = EngineConst.dbFile;
-
-    /**
      * 临时解压目录（默认 jar-analyzer-temp）
      */
     private String tempDir = EngineConst.tempDir;
@@ -98,14 +93,6 @@ public class EngineConfig {
 
     public void setRtJarPath(Path rtJarPath) {
         this.rtJarPath = rtJarPath;
-    }
-
-    public String getDbPath() {
-        return dbPath;
-    }
-
-    public void setDbPath(String dbPath) {
-        this.dbPath = dbPath;
     }
 
     public String getTempDir() {
