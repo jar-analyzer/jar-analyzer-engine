@@ -46,7 +46,10 @@ public class InheritanceRunner {
             if (parentClassReference == null) {
                 continue;
             }
-            allParents.add(parentClassReference.getHandle());
+            if (!allParents.add(parentClassReference.getHandle())) {
+                // Already processed this parent, skip to avoid infinite recursion
+                continue;
+            }
             getAllParents(parentClassReference, classMap, allParents);
         }
     }

@@ -32,7 +32,6 @@ import java.util.*;
 @SuppressWarnings("all")
 public class JarUtil {
     private static final Logger logger = LogManager.getLogger();
-    private static final Set<ClassFileEntity> classFileSet = new HashSet<>();
 
     private static final String META_INF = "META-INF";
     private static final int MAX_PARENT_SEARCH = 20;
@@ -71,9 +70,9 @@ public class JarUtil {
     public static List<ClassFileEntity> resolveNormalJarFile(String jarPath, Integer jarId) {
         try {
             Path tmpDir = Paths.get(EngineConst.tempDir);
-            classFileSet.clear();
-            resolve(jarId, jarPath, tmpDir);
-            return new ArrayList<>(classFileSet);
+            Set<ClassFileEntity> localClassFileSet = new HashSet<>();
+            resolve(jarId, jarPath, tmpDir, localClassFileSet);
+            return new ArrayList<>(localClassFileSet);
         } catch (Exception e) {
             logger.error("error: {}", e.toString());
         }
@@ -83,36 +82,37 @@ public class JarUtil {
     private static boolean shouldRun(String whiteText, String blackText, String saveClass) {
         boolean whiteDoIt = false;
 
-        int i = saveClass.indexOf("classes");
-        if (i > 0) {
-            if (saveClass.contains("BOOT-INF") || saveClass.contains("WEB-INF")) {
-                saveClass = saveClass.substring(i + 8, saveClass.length() - 6);
-            } else {
-                saveClass = saveClass.substring(0, saveClass.length() - 6);
+        // Normalize saveClass: strip .class suffix and fix BOOT-INF/WEB-INF paths
+        if (saveClass.contains("BOOT-INF") || saveClass.contains("WEB-INF")) {
+            int i = saveClass.indexOf("classes");
+            if (i >= 0) {
+                // e.g. "BOOT-INF/classes/com/example/Foo.class" -> "com/example/Foo"
+                saveClass = saveClass.substring(i + 8);
             }
+        }
+        if (saveClass.endsWith(".class")) {
+            saveClass = saveClass.substring(0, saveClass.length() - 6);
         }
 
         if (whiteText != null && !StringUtil.isNull(whiteText)) {
             ArrayList<String> data = ListParser.parse(whiteText);
-            String className = saveClass;
-            if (className.endsWith(".class")) {
-                className = className.substring(0, className.length() - 6);
-            }
-            for (String s : data) {
-                if (s.endsWith("/")) {
-                    if (className.startsWith(s)) {
-                        whiteDoIt = true;
-                        break;
-                    }
-                } else {
-                    if (className.equals(s)) {
-                        whiteDoIt = true;
-                        break;
+            if (data.isEmpty()) {
+                whiteDoIt = true;
+            } else {
+                String className = saveClass;
+                for (String s : data) {
+                    if (s.endsWith("/")) {
+                        if (className.startsWith(s)) {
+                            whiteDoIt = true;
+                            break;
+                        }
+                    } else {
+                        if (className.equals(s)) {
+                            whiteDoIt = true;
+                            break;
+                        }
                     }
                 }
-            }
-            if (data == null || data.size() == 0) {
-                whiteDoIt = true;
             }
         } else {
             whiteDoIt = true;
@@ -126,9 +126,6 @@ public class JarUtil {
         if (blackText != null && !StringUtil.isNull(blackText)) {
             ArrayList<String> data = ListParser.parse(blackText);
             String className = saveClass;
-            if (className.endsWith(".class")) {
-                className = className.substring(0, className.length() - 6);
-            }
             for (String s : data) {
                 if (className.equals(s)) {
                     doIt = false;
@@ -150,7 +147,8 @@ public class JarUtil {
         return true;
     }
 
-    private static void resolve(Integer jarId, String jarPathStr, Path tmpDir) {
+    private static void resolve(Integer jarId, String jarPathStr, Path tmpDir,
+                                Set<ClassFileEntity> localClassFileSet) {
         String text = blackListText;
         String whiteText = whiteListText;
         Path jarPath = Paths.get(jarPathStr);
@@ -204,7 +202,7 @@ public class JarUtil {
 
                     ClassFileEntity classFile = new ClassFileEntity(saveClass, jarPath, jarId);
                     classFile.setJarName("class");
-                    classFileSet.add(classFile);
+                    localClassFileSet.add(classFile);
 
                     Path fullPath = tmpDir.resolve(jarPathStr);
                     Path parPath = fullPath.getParent();
@@ -215,11 +213,10 @@ public class JarUtil {
                         Files.createFile(fullPath);
                     } catch (Exception ignored) {
                     }
-                    InputStream fis = Files.newInputStream(Paths.get(backPath));
-                    OutputStream outputStream = Files.newOutputStream(fullPath);
-                    IOUtil.copy(fis, outputStream);
-                    outputStream.close();
-                    fis.close();
+                    try (InputStream fis = Files.newInputStream(Paths.get(backPath));
+                         OutputStream outputStream = Files.newOutputStream(fullPath)) {
+                        IOUtil.copy(fis, outputStream);
+                    }
                 } else {
                     return;
                 }
@@ -251,11 +248,10 @@ public class JarUtil {
                                 Files.createFile(fullPath);
                             } catch (Exception ignored) {
                             }
-                            OutputStream outputStream = Files.newOutputStream(fullPath);
-                            InputStream temp = jarFile.getInputStream(jarEntry);
-                            IOUtil.copy(temp, outputStream);
-                            temp.close();
-                            outputStream.close();
+                            try (InputStream temp = jarFile.getInputStream(jarEntry);
+                                 OutputStream outputStream = Files.newOutputStream(fullPath)) {
+                                IOUtil.copy(temp, outputStream);
+                            }
                             logger.debug("save config: {}", jarEntryName);
                             continue;
                         }
@@ -271,12 +267,11 @@ public class JarUtil {
                                     Files.createFile(fullPath);
                                 } catch (Exception ignored) {
                                 }
-                                OutputStream outputStream = Files.newOutputStream(fullPath);
-                                InputStream temp = jarFile.getInputStream(jarEntry);
-                                IOUtil.copy(temp, outputStream);
-                                temp.close();
-                                doInternal(jarId, fullPath, tmpDir, text, whiteText);
-                                outputStream.close();
+                                try (InputStream temp = jarFile.getInputStream(jarEntry);
+                                     OutputStream outputStream = Files.newOutputStream(fullPath)) {
+                                    IOUtil.copy(temp, outputStream);
+                                }
+                                doInternal(jarId, fullPath, tmpDir, text, whiteText, localClassFileSet);
                             }
                             continue;
                         }
@@ -289,11 +284,10 @@ public class JarUtil {
                         if (!Files.exists(dirName)) {
                             Files.createDirectories(dirName);
                         }
-                        OutputStream outputStream = Files.newOutputStream(fullPath);
-                        InputStream temp = jarFile.getInputStream(jarEntry);
-                        IOUtil.copy(temp, outputStream);
-                        temp.close();
-                        outputStream.close();
+                        try (InputStream temp = jarFile.getInputStream(jarEntry);
+                             OutputStream outputStream = Files.newOutputStream(fullPath)) {
+                            IOUtil.copy(temp, outputStream);
+                        }
                         ClassFileEntity classFile = new ClassFileEntity(jarEntry.getName(), fullPath, jarId);
                         String splitStr;
                         if (OSUtil.isWindows()) {
@@ -303,7 +297,7 @@ public class JarUtil {
                         }
                         String[] splits = jarPathStr.split(splitStr);
                         classFile.setJarName(splits[splits.length - 1]);
-                        classFileSet.add(classFile);
+                        localClassFileSet.add(classFile);
                     }
                 }
                 jarFile.close();
@@ -315,7 +309,8 @@ public class JarUtil {
     }
 
     private static void doInternal(Integer jarId, Path jarPath, Path tmpDir,
-                                   String text, String whiteText) {
+                                   String text, String whiteText,
+                                   Set<ClassFileEntity> localClassFileSet) {
         try {
             ZipFile jarFile = new ZipFile(jarPath);
             Enumeration<? extends ZipArchiveEntry> entries = jarFile.getEntries();
@@ -343,11 +338,10 @@ public class JarUtil {
                             Files.createFile(fullPath);
                         } catch (Exception ignored) {
                         }
-                        OutputStream outputStream = Files.newOutputStream(fullPath);
-                        InputStream temp = jarFile.getInputStream(jarEntry);
-                        IOUtil.copy(temp, outputStream);
-                        temp.close();
-                        outputStream.close();
+                        try (InputStream temp = jarFile.getInputStream(jarEntry);
+                             OutputStream outputStream = Files.newOutputStream(fullPath)) {
+                            IOUtil.copy(temp, outputStream);
+                        }
                         logger.debug("save config: {}", jarEntryName);
                         continue;
                     }
@@ -364,11 +358,10 @@ public class JarUtil {
                     if (!Files.exists(dirName)) {
                         Files.createDirectories(dirName);
                     }
-                    OutputStream outputStream = Files.newOutputStream(fullPath);
-                    InputStream temp = jarFile.getInputStream(jarEntry);
-                    IOUtil.copy(temp, outputStream);
-                    temp.close();
-                    outputStream.close();
+                    try (InputStream temp = jarFile.getInputStream(jarEntry);
+                         OutputStream outputStream = Files.newOutputStream(fullPath)) {
+                        IOUtil.copy(temp, outputStream);
+                    }
                     ClassFileEntity classFile = new ClassFileEntity(jarEntry.getName(), fullPath, jarId);
                     String splitStr;
                     if (OSUtil.isWindows()) {
@@ -378,7 +371,7 @@ public class JarUtil {
                     }
                     String[] splits = jarPath.toString().split(splitStr);
                     classFile.setJarName(splits[splits.length - 1]);
-                    classFileSet.add(classFile);
+                    localClassFileSet.add(classFile);
                 }
             }
             jarFile.close();

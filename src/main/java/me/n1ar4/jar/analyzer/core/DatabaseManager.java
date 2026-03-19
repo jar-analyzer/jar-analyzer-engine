@@ -295,7 +295,8 @@ public class DatabaseManager {
                 mce.setCallerClassName(caller.getClassReference().getName());
                 mce.setCallerMethodName(caller.getName());
                 mce.setCallerMethodDesc(caller.getDesc());
-                mce.setCallerJarId(AnalyzeEnv.classMap.get(caller.getClassReference()).getJarId());
+                mce.setCallerJarId(AnalyzeEnv.classMap.getOrDefault(
+                        caller.getClassReference(), notFoundClassReference).getJarId());
                 mce.setCalleeClassName(mh.getClassReference().getName());
                 mce.setCalleeMethodName(mh.getName());
                 mce.setCalleeMethodDesc(mh.getDesc());
@@ -327,8 +328,10 @@ public class DatabaseManager {
                 impl.setClassName(method.getClassReference().getName());
                 impl.setMethodName(mh.getName());
                 impl.setMethodDesc(mh.getDesc());
-                impl.setClassJarId(AnalyzeEnv.classMap.get(method.getClassReference()).getJarId());
-                impl.setImplClassJarId(AnalyzeEnv.classMap.get(mh.getClassReference()).getJarId());
+                impl.setClassJarId(AnalyzeEnv.classMap.getOrDefault(
+                        method.getClassReference(), notFoundClassReference).getJarId());
+                impl.setImplClassJarId(AnalyzeEnv.classMap.getOrDefault(
+                        mh.getClassReference(), notFoundClassReference).getJarId());
                 mList.add(impl);
             }
         }
@@ -351,7 +354,15 @@ public class DatabaseManager {
             List<String> strList = strEntry.getValue();
             for (String s : strList) {
                 MethodReference mr = AnalyzeEnv.methodMap.get(method);
+                if (mr == null) {
+                    logger.warn("method not found in methodMap: {}", method);
+                    continue;
+                }
                 ClassReference cr = AnalyzeEnv.classMap.get(mr.getClassReference());
+                if (cr == null) {
+                    logger.warn("class not found in classMap: {}", mr.getClassReference());
+                    continue;
+                }
                 StringEntity stringEntity = new StringEntity();
                 stringEntity.setValue(s);
                 stringEntity.setAccess(mr.getAccess());
@@ -369,7 +380,15 @@ public class DatabaseManager {
             List<String> strList = strEntry.getValue();
             for (String s : strList) {
                 MethodReference mr = AnalyzeEnv.methodMap.get(method);
+                if (mr == null) {
+                    logger.warn("method not found in methodMap for anno: {}", method);
+                    continue;
+                }
                 ClassReference cr = AnalyzeEnv.classMap.get(mr.getClassReference());
+                if (cr == null) {
+                    logger.warn("class not found in classMap for anno: {}", mr.getClassReference());
+                    continue;
+                }
                 StringEntity stringEntity = new StringEntity();
                 stringEntity.setValue(s);
                 stringEntity.setAccess(mr.getAccess());

@@ -10,6 +10,8 @@
 
 package me.n1ar4.jar.analyzer.core.reference;
 
+import java.util.Objects;
+
 public class AnnoReference {
     private String annoName;
     private Boolean visible;
@@ -44,6 +46,21 @@ public class AnnoReference {
 
     public void setParameter(Integer parameter) {
         this.parameter = parameter;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AnnoReference that = (AnnoReference) o;
+        return Objects.equals(annoName, that.annoName) &&
+                Objects.equals(visible, that.visible) &&
+                Objects.equals(parameter, that.parameter);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(annoName, visible, parameter);
     }
 
     @Override

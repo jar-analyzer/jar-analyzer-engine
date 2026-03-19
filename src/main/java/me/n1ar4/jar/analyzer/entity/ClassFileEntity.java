@@ -15,6 +15,7 @@ import me.n1ar4.jar.analyzer.engine.log.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 public class ClassFileEntity {
     private static final Logger logger = LogManager.getLogger();
@@ -89,6 +90,21 @@ public class ClassFileEntity {
             logger.error("get file error: {}", e.toString());
         }
         return null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ClassFileEntity that = (ClassFileEntity) o;
+        return Objects.equals(className, that.className) &&
+                Objects.equals(path, that.path) &&
+                Objects.equals(jarId, that.jarId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(className, path, jarId);
     }
 
     @Override

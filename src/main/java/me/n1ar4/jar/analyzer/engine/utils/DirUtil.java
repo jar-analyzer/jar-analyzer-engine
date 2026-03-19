@@ -20,23 +20,23 @@ import java.util.List;
 @SuppressWarnings("all")
 public class DirUtil {
     private static final Logger logger = LogManager.getLogger();
-    private static final List<String> filenames = new ArrayList<>();
 
     public static List<String> GetFiles(String path) {
-        filenames.clear();
-        return getFiles(path);
+        List<String> filenames = new ArrayList<>();
+        getFiles(path, filenames);
+        return filenames;
     }
 
-    private static List<String> getFiles(String path) {
+    private static void getFiles(String path, List<String> filenames) {
         File file = new File(path);
         if (file.isDirectory()) {
             File[] files = file.listFiles();
             if (files == null) {
-                return filenames;
+                return;
             }
             for (File value : files) {
                 if (value.isDirectory()) {
-                    getFiles(value.getPath());
+                    getFiles(value.getPath(), filenames);
                 } else {
                     filenames.add(value.getAbsolutePath());
                 }
@@ -44,6 +44,5 @@ public class DirUtil {
         } else {
             filenames.add(file.getAbsolutePath());
         }
-        return filenames;
     }
 }

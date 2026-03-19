@@ -20,12 +20,13 @@ import me.n1ar4.jar.analyzer.engine.log.LogManager;
 import me.n1ar4.jar.analyzer.engine.log.Logger;
 import me.n1ar4.jar.analyzer.engine.utils.*;
 import me.n1ar4.jar.analyzer.entity.ClassFileEntity;
+import me.n1ar4.jar.analyzer.entity.JarEntity;
 import org.objectweb.asm.ClassReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,7 +45,21 @@ public class EngineBuildRunner {
             callback = ProgressCallback.CONSOLE;
         }
 
-        // Clear corrupted files tracking
+        // Clear all state for re-entrant safety
+        AnalyzeEnv.classFileList.clear();
+        AnalyzeEnv.discoveredClasses.clear();
+        AnalyzeEnv.discoveredMethods.clear();
+        AnalyzeEnv.methodsInClassMap.clear();
+        AnalyzeEnv.classMap.clear();
+        AnalyzeEnv.methodMap.clear();
+        AnalyzeEnv.methodCalls.clear();
+        AnalyzeEnv.strMap.clear();
+        AnalyzeEnv.controllers.clear();
+        AnalyzeEnv.interceptors.clear();
+        AnalyzeEnv.servlets.clear();
+        AnalyzeEnv.filters.clear();
+        AnalyzeEnv.listeners.clear();
+        AnalyzeEnv.stringAnnoMap.clear();
         AnalyzeEnv.corruptedFiles.clear();
 
         // Setup JarUtil with black/white list
@@ -78,7 +93,12 @@ public class EngineBuildRunner {
                 if (s.toLowerCase().endsWith(".jar") ||
                         s.toLowerCase().endsWith(".war")) {
                     DatabaseManager.saveJar(s);
-                    jarIdMap.put(s, DatabaseManager.getJarId(s).getJid());
+                    JarEntity jarEntity = DatabaseManager.getJarId(s);
+                    if (jarEntity != null) {
+                        jarIdMap.put(s, jarEntity.getJid());
+                    } else {
+                        logger.error("save jar failed, cannot get jar id: {}", s);
+                    }
                 }
             }
             cfs = CoreUtil.getAllClassesFromJars(files, jarIdMap);
@@ -94,7 +114,12 @@ public class EngineBuildRunner {
             callback.onStats("totalJar", String.valueOf(jarList.size()));
             for (String s : jarList) {
                 DatabaseManager.saveJar(s);
-                jarIdMap.put(s, DatabaseManager.getJarId(s).getJid());
+                JarEntity jarEntity = DatabaseManager.getJarId(s);
+                if (jarEntity != null) {
+                    jarIdMap.put(s, jarEntity.getJid());
+                } else {
+                    logger.error("save jar failed, cannot get jar id: {}", s);
+                }
             }
             cfs = CoreUtil.getAllClassesFromJars(jarList, jarIdMap);
         }
@@ -103,19 +128,26 @@ public class EngineBuildRunner {
         for (ClassFileEntity cf : cfs) {
             String className = cf.getClassName();
             if (!fixClass) {
-                int i = className.indexOf("classes");
                 if (className.contains("BOOT-INF") || className.contains("WEB-INF")) {
-                    className = className.substring(i + 8);
+                    int i = className.indexOf("classes");
+                    if (i >= 0) {
+                        className = className.substring(i + 8);
+                    }
                 }
                 cf.setClassName(className);
             } else {
                 Path parPath = Paths.get(EngineConst.tempDir);
                 FixClassVisitor cv = new FixClassVisitor();
+                byte[] fileBytes = cf.getFile();
+                if (fileBytes == null) {
+                    logger.error("cannot read class file: {}", cf.getClassName());
+                    continue;
+                }
                 try {
-                    ClassReader cr = new ClassReader(cf.getFile());
+                    ClassReader cr = new ClassReader(fileBytes);
                     cr.accept(cv, EngineConst.AnalyzeASMOptions);
                 } catch (IndexOutOfBoundsException e) {
-                    if (!StackMapFrameHandler.handleParseException(cf.getFile(), cv,
+                    if (!StackMapFrameHandler.handleParseException(fileBytes, cv,
                             cf.getJarName() + "!" + cf.getClassName(),
                             logger, "fix class name", e)) {
                         throw e;
@@ -123,15 +155,15 @@ public class EngineBuildRunner {
                 }
                 Path path = parPath.resolve(Paths.get(cv.getName()));
                 File file = path.toFile();
-                if (!file.getParentFile().mkdirs()) {
+                if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
                     logger.error("fix class mkdirs error");
                 }
                 className = file.getPath() + ".class";
-                try {
-                    IOUtil.copy(new ByteArrayInputStream(cf.getFile()),
-                            new FileOutputStream(className));
-                } catch (FileNotFoundException ignored) {
-                    logger.error("fix path copy bytes error");
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(fileBytes);
+                     FileOutputStream fos = new FileOutputStream(className)) {
+                    IOUtil.copy(bis, fos);
+                } catch (IOException ex) {
+                    logger.error("fix path copy bytes error: {}", ex.toString());
                 }
                 cf.setClassName(className);
                 cf.setPath(Paths.get(className));
@@ -209,9 +241,14 @@ public class EngineBuildRunner {
 
             for (ClassFileEntity file : AnalyzeEnv.classFileList) {
                 try {
+                    byte[] fileBytes = file.getFile();
+                    if (fileBytes == null) {
+                        logger.error("cannot read class file for string analysis: {}", file.getClassName());
+                        continue;
+                    }
                     StringClassVisitor dcv = new StringClassVisitor(
                             AnalyzeEnv.strMap, AnalyzeEnv.classMap, AnalyzeEnv.methodMap);
-                    ClassReader cr = new ClassReader(file.getFile());
+                    ClassReader cr = new ClassReader(fileBytes);
                     cr.accept(dcv, EngineConst.AnalyzeASMOptions);
                 } catch (IndexOutOfBoundsException e) {
                     if (!StackMapFrameHandler.handleParseException(file,
@@ -272,6 +309,12 @@ public class EngineBuildRunner {
         AnalyzeEnv.methodMap.clear();
         AnalyzeEnv.methodCalls.clear();
         AnalyzeEnv.strMap.clear();
+        AnalyzeEnv.stringAnnoMap.clear();
+        AnalyzeEnv.interceptors.clear();
+        AnalyzeEnv.servlets.clear();
+        AnalyzeEnv.filters.clear();
+        AnalyzeEnv.listeners.clear();
+        AnalyzeEnv.corruptedFiles.clear();
         if (!quickMode) {
             if (AnalyzeEnv.inheritanceMap != null) {
                 AnalyzeEnv.inheritanceMap.getInheritanceMap().clear();
