@@ -74,11 +74,9 @@ java -jar jar-analyzer-engine.jar --jar /path/to/app.jar
 # 分析目录下所有 JAR
 java -jar jar-analyzer-engine.jar --jar /path/to/libs/
 
-# 指定输出数据库路径
-java -jar jar-analyzer-engine.jar --jar /path/to/app.jar --db output.db
 ```
 
-分析完成后将生成 SQLite 数据库文件（默认为 `jar-analyzer.db`），可使用任何 SQLite 客户端工具查询。
+分析完成后将在当前目录生成 SQLite 数据库文件 `jar-analyzer.db`，可使用任何 SQLite 客户端工具查询。
 
 ## 📋 命令行参数
 
@@ -92,7 +90,6 @@ java -jar jar-analyzer-engine.jar --jar /path/to/app.jar --db output.db
 
 | 参数 | 缩写 | 默认值 | 说明 |
 |------|------|--------|------|
-| `--db <path>` | `-d` | `jar-analyzer.db` | 输出 SQLite 数据库文件路径 |
 | `--temp <path>` | `-t` | `jar-analyzer-temp` | 临时解压目录路径 |
 | `--rt <path>` | — | 无 | rt.jar 路径，附加 JDK 标准类进行分析 |
 | `--quick` | `-q` | `false` | 启用快速模式 |
@@ -124,14 +121,6 @@ java -jar jar-analyzer-engine.jar --jar webapp.war
 
 # 扫描整个 lib 目录
 java -jar jar-analyzer-engine.jar --jar /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-```
-
-### `--db` / `-d`
-
-指定输出的 SQLite 数据库文件路径。引擎会将所有分析结果写入该数据库，如果文件已存在会被覆盖。
-
-```bash
-java -jar jar-analyzer-engine.jar --jar app.jar --db /tmp/analysis.db
 ```
 
 ### `--temp` / `-t`
@@ -453,8 +442,7 @@ WHERE method_name = 'invoke';
 java -jar jar-analyzer-engine.jar \
   --jar springboot-app.jar \
   --fix-class \
-  --inner-jars \
-  --db springboot-analysis.db
+  --inner-jars
 ```
 
 推荐同时启用 `--fix-class` 和 `--inner-jars`，因为 Spring Boot Fat JAR 将 class 文件放在 `BOOT-INF/classes/` 中，依赖库放在 `BOOT-INF/lib/` 中。
@@ -463,8 +451,7 @@ java -jar jar-analyzer-engine.jar \
 
 ```bash
 java -jar jar-analyzer-engine.jar \
-  --jar /opt/tomcat/webapps/myapp/WEB-INF/lib/ \
-  --db webapp-analysis.db
+  --jar /opt/tomcat/webapps/myapp/WEB-INF/lib/
 ```
 
 ### 3. 快速分析方法调用链
@@ -472,8 +459,7 @@ java -jar jar-analyzer-engine.jar \
 ```bash
 java -jar jar-analyzer-engine.jar \
   --jar target.jar \
-  --quick \
-  --db quick-analysis.db
+  --quick
 ```
 
 ### 4. 精确范围分析
@@ -482,8 +468,7 @@ java -jar jar-analyzer-engine.jar \
 java -jar jar-analyzer-engine.jar \
   --jar app.jar \
   --white-list "com.mycompany.service.;com.mycompany.controller." \
-  --black-list "com.mycompany.service.test." \
-  --db precise-analysis.db
+  --black-list "com.mycompany.service.test."
 ```
 
 ### 5. 包含 JDK 类分析（反序列化链挖掘等场景）
@@ -491,8 +476,7 @@ java -jar jar-analyzer-engine.jar \
 ```bash
 java -jar jar-analyzer-engine.jar \
   --jar app.jar \
-  --rt /usr/lib/jvm/java-8-openjdk/jre/lib/rt.jar \
-  --db full-analysis.db
+  --rt /usr/lib/jvm/java-8-openjdk/jre/lib/rt.jar
 ```
 
 ## 🤖 与 AI 集成进行代码审计
@@ -503,7 +487,7 @@ java -jar jar-analyzer-engine.jar \
 
 ```bash
 # 1. 先用引擎分析目标应用
-java -jar jar-analyzer-engine.jar --jar target-app.jar --db audit.db
+java -jar jar-analyzer-engine.jar --jar target-app.jar
 
 # 2. 在 Claude Code 中，AI 可以直接查询数据库进行分析
 ```
@@ -519,7 +503,7 @@ java -jar jar-analyzer-engine.jar --jar target-app.jar --db audit.db
 ### 示例对话
 
 ```
-用户: 帮我分析 audit.db 中所有的 Web 入口点，并追踪哪些入口点最终会调用到 Runtime.exec
+用户: 帮我分析 jar-analyzer.db 中所有的 Web 入口点，并追踪哪些入口点最终会调用到 Runtime.exec
 
 AI: 我来查询数据库进行分析...
     [查询 spring_method_table 获取所有路由]
@@ -539,7 +523,6 @@ import me.n1ar4.jar.analyzer.engine.ProgressCallback;
 // 构建配置
 EngineConfig config = new EngineConfig();
 config.setJarPath(Paths.get("/path/to/app.jar"));
-config.setDbPath("output.db");
 config.setTempDir("temp");
 config.setQuickMode(false);
 config.setFixClass(true);

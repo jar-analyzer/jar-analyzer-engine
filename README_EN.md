@@ -72,11 +72,9 @@ java -jar jar-analyzer-engine.jar --jar /path/to/app.jar
 # Analyze all JARs in a directory
 java -jar jar-analyzer-engine.jar --jar /path/to/libs/
 
-# Specify output database path
-java -jar jar-analyzer-engine.jar --jar /path/to/app.jar --db output.db
 ```
 
-After analysis, a SQLite database file (default: `jar-analyzer.db`) will be generated and can be queried with any SQLite client tool.
+After analysis, a SQLite database file `jar-analyzer.db` will be generated in the current directory and can be queried with any SQLite client tool.
 
 ## 📋 Command-Line Arguments
 
@@ -90,7 +88,6 @@ After analysis, a SQLite database file (default: `jar-analyzer.db`) will be gene
 
 | Argument | Short | Default | Description |
 |----------|-------|---------|-------------|
-| `--db <path>` | `-d` | `jar-analyzer.db` | Output SQLite database file path |
 | `--temp <path>` | `-t` | `jar-analyzer-temp` | Temporary extraction directory path |
 | `--rt <path>` | — | None | Path to rt.jar for including JDK standard classes in the analysis |
 | `--quick` | `-q` | `false` | Enable quick mode |
@@ -122,14 +119,6 @@ java -jar jar-analyzer-engine.jar --jar webapp.war
 
 # Scan entire lib directory
 java -jar jar-analyzer-engine.jar --jar /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-```
-
-### `--db` / `-d`
-
-Specifies the output SQLite database file path. The engine writes all analysis results to this database. If the file already exists, it will be overwritten.
-
-```bash
-java -jar jar-analyzer-engine.jar --jar app.jar --db /tmp/analysis.db
 ```
 
 ### `--temp` / `-t`
@@ -454,8 +443,7 @@ WHERE method_name = 'invoke';
 java -jar jar-analyzer-engine.jar \
   --jar springboot-app.jar \
   --fix-class \
-  --inner-jars \
-  --db springboot-analysis.db
+  --inner-jars
 ```
 
 It is recommended to enable both `--fix-class` and `--inner-jars`, since Spring Boot Fat JARs place class files under `BOOT-INF/classes/` and dependency libraries under `BOOT-INF/lib/`.
@@ -464,8 +452,7 @@ It is recommended to enable both `--fix-class` and `--inner-jars`, since Spring 
 
 ```bash
 java -jar jar-analyzer-engine.jar \
-  --jar /opt/tomcat/webapps/myapp/WEB-INF/lib/ \
-  --db webapp-analysis.db
+  --jar /opt/tomcat/webapps/myapp/WEB-INF/lib/
 ```
 
 ### 3. Quick Method Call Chain Analysis
@@ -473,8 +460,7 @@ java -jar jar-analyzer-engine.jar \
 ```bash
 java -jar jar-analyzer-engine.jar \
   --jar target.jar \
-  --quick \
-  --db quick-analysis.db
+  --quick
 ```
 
 ### 4. Precise Scope Analysis
@@ -483,8 +469,7 @@ java -jar jar-analyzer-engine.jar \
 java -jar jar-analyzer-engine.jar \
   --jar app.jar \
   --white-list "com.mycompany.service.;com.mycompany.controller." \
-  --black-list "com.mycompany.service.test." \
-  --db precise-analysis.db
+  --black-list "com.mycompany.service.test."
 ```
 
 ### 5. Analysis Including JDK Classes (Deserialization Chain Mining, etc.)
@@ -492,8 +477,7 @@ java -jar jar-analyzer-engine.jar \
 ```bash
 java -jar jar-analyzer-engine.jar \
   --jar app.jar \
-  --rt /usr/lib/jvm/java-8-openjdk/jre/lib/rt.jar \
-  --db full-analysis.db
+  --rt /usr/lib/jvm/java-8-openjdk/jre/lib/rt.jar
 ```
 
 ## 🤖 AI Integration for Code Auditing
@@ -504,7 +488,7 @@ The generated SQLite database is naturally suited for use with AI tools. Here is
 
 ```bash
 # 1. First, analyze the target application with the engine
-java -jar jar-analyzer-engine.jar --jar target-app.jar --db audit.db
+java -jar jar-analyzer-engine.jar --jar target-app.jar
 
 # 2. In Claude Code, the AI can directly query the database for analysis
 ```
@@ -520,7 +504,7 @@ In Claude Code, you can ask the AI to perform the following audit tasks:
 ### Example Conversation
 
 ```
-User: Analyze all web entry points in audit.db and trace which ones eventually call Runtime.exec
+User: Analyze all web entry points in jar-analyzer.db and trace which ones eventually call Runtime.exec
 
 AI: Let me query the database for analysis...
     [Query spring_method_table to get all routes]
@@ -540,7 +524,6 @@ import me.n1ar4.jar.analyzer.engine.ProgressCallback;
 // Build configuration
 EngineConfig config = new EngineConfig();
 config.setJarPath(Paths.get("/path/to/app.jar"));
-config.setDbPath("output.db");
 config.setTempDir("temp");
 config.setQuickMode(false);
 config.setFixClass(true);
