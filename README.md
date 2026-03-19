@@ -22,6 +22,8 @@
 
 > [English Version](README_EN.md)
 
+[更新日志](CHANGLOG.md)
+
 ## 📖 简介
 
 **Jar Analyzer Engine** 是 Java 字节码安全分析 GUI 工具 [jar-analyzer](https://github.com/jar-analyzer/jar-analyzer) 的**核心引擎**，现已独立提取为可单独使用的命令行工具和编程库。
