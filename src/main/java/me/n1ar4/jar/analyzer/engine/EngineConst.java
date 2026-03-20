@@ -17,7 +17,7 @@ import org.objectweb.asm.Opcodes;
  * 引擎核心常量（不包含 GUI 常量）
  */
 public interface EngineConst {
-    String version = "1.0.0";
+    String version = "1.2.0";
     int ASMVersion = Opcodes.ASM9;
     int AnalyzeASMOptions = ClassReader.EXPAND_FRAMES;
     /**
